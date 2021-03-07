@@ -20,6 +20,14 @@ h2 {
   }
 }
 
+.player-name {
+  text-align: left;
+}
+
+.log-box {
+  height: 300px;
+}
+
 .App-header {
   background-color: #282c34;
   min-height: 100vh;

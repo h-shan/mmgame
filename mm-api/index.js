@@ -1,3 +1,5 @@
+const { stringify } = require('querystring');
+
 const app = require('express')();
 
 const server = require('http').createServer(app);
@@ -13,10 +15,16 @@ const players = {};
 io.on('connection', (socket) => {
   console.log('socket connected', socket.id);
   players[socket.id] = { id: socket.id, name: socket.id, points: 0 };
-  socket.emit('connection', null);
+  socket.emit('connection', { id: socket.id });
+
   io.emit('state', { players: Object.values(players) });
   socket.on('hello', (msg) => {
     console.log(msg);
+  });
+
+  socket.on('changeName', ({ id, name }) => {
+    players[id].name = name;
+    io.emit('state', { players: Object.values(players) });
   });
 
   socket.on('disconnect', () => {
