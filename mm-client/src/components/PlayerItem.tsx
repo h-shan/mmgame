@@ -20,10 +20,12 @@ const PlayerItem = ({
   return (
     <Row className="player-item" key={player.id}>
       <Col>
-        {self && (
-          <Form.Control type="text" value={player.name} onChange={changeName} />
-        )}
-        {!self && <p className="player-name">{player.name}</p>}
+        <Form.Control
+          type="text"
+          value={player.name}
+          onChange={changeName}
+          disabled={!self}
+        />
       </Col>
       <Col>{player.points}</Col>
     </Row>
