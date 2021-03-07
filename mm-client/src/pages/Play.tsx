@@ -1,26 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Button,
+  ButtonGroup,
+  ButtonToolbar,
   Col,
   Container,
   Form,
   Row,
-  ButtonGroup,
-  Button
+  Toast
 } from 'react-bootstrap';
 import { io, Socket } from 'socket.io-client';
 
+import { rt2d } from '../global/util';
 import Player from '../models/Player';
 import PlayerItem from '../components/PlayerItem';
 
 class GameState {
   prompt: string = '';
   players: Player[] = [];
+  width: number = 0;
 }
 
 const PlayPage: React.FC = () => {
   const [idMe, setIdMe] = useState('unset');
   const [socket, setSocket] = useState((null as unknown) as Socket);
   const [gameState, setGameState] = useState(new GameState());
+  const [bidWidth, setBidWidth] = useState(0);
+  const [showBidWidthTooLargeToast, setShowBidWidthTooLargeToast] = useState(
+    false
+  );
 
   useEffect(() => {
     const _socket = io('http://localhost:3000');
@@ -44,6 +52,13 @@ const PlayPage: React.FC = () => {
     socket.emit('changePrompt', { prompt: e.target.value });
   };
 
+  const submitWidth = () => {
+    if (gameState.width && bidWidth > gameState.width * 0.9) {
+      setShowBidWidthTooLargeToast(true);
+    }
+    socket.emit('bidWidth', { id: idMe, width: bidWidth });
+  };
+
   return (
     <>
       <Container>
@@ -62,6 +77,40 @@ const PlayPage: React.FC = () => {
           </Col>
           <Col>
             <Button variant="secondary">Sell</Button>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <Toast
+              onClose={() => setShowBidWidthTooLargeToast(false)}
+              show={showBidWidthTooLargeToast}
+              delay={3000}
+              autohide>
+              <Toast.Header>
+                <strong className="mr-auto">Bid width too large!</strong>
+              </Toast.Header>
+              <Toast.Body>
+                Maximium bid width is {rt2d(0.9 * gameState.width)} because
+                current min width is {rt2d(gameState.width)}.
+              </Toast.Body>
+            </Toast>
+            <Form.Control
+              type="number"
+              value={bidWidth}
+              placeholder="Width"
+              onChange={(e) => {
+                setBidWidth(Number(e.target.value));
+              }}
+            />
+            {gameState.width !== 0 && (
+              <Form.Text className="text-muted">
+                Current best width: {gameState.width} - Max bid width:{' '}
+                {rt2d(gameState.width * 0.9)}
+              </Form.Text>
+            )}
+          </Col>
+          <Col>
+            <Button onClick={submitWidth}>Submit Width Bid</Button>
           </Col>
         </Row>
         <Row>

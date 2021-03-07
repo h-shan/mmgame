@@ -11,10 +11,11 @@ const io = require('socket.io')(server, {
 });
 
 let prompt = '';
+let width = 0;
 const players = {};
 
 const updateState = () => {
-  io.emit('state', { prompt, players: Object.values(players) });
+  io.emit('state', { prompt, players: Object.values(players), width });
 };
 
 io.on('connection', (socket) => {
@@ -34,6 +35,12 @@ io.on('connection', (socket) => {
 
   socket.on('changePrompt', ({ prompt: _prompt }) => {
     prompt = _prompt;
+    updateState();
+  });
+
+  socket.on('bidWidth', ({ id, width: _width }) => {
+    width = _width;
+    console.log(`id=${id}, width=${width}`);
     updateState();
   });
 
