@@ -8,11 +8,20 @@ const io = require('socket.io')(server, {
   }
 });
 
+const players = {};
+
 io.on('connection', (socket) => {
-  console.log('socket connected');
+  console.log('socket connected', socket.id);
+  players[socket.id] = { id: socket.id, name: socket.id, points: 0 };
   socket.emit('connection', null);
+  io.emit('state', { players: Object.values(players) });
   socket.on('hello', (msg) => {
     console.log(msg);
+  });
+
+  socket.on('disconnect', () => {
+    delete players[socket.id];
+    io.emit('state', { players: Object.values(players) });
   });
 });
 

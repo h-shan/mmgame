@@ -1,13 +1,36 @@
 import React, { useEffect, useState } from 'react';
+import {
+  Col,
+  Container,
+  InputGroup,
+  Row,
+  ButtonGroup,
+  Button
+} from 'react-bootstrap';
 import { io, Socket } from 'socket.io-client';
+
+class Player {
+  id: string = '';
+  name: string = '';
+  points: number = 0;
+}
+
+class GameState {
+  players: Player[] = [];
+}
 
 const PlayPage: React.FC = () => {
   const [socket, setSocket] = useState((null as unknown) as Socket);
+  const [gameState, setGameState] = useState(new GameState());
 
   useEffect(() => {
     const _socket = io('http://localhost:3000');
     _socket.on('connection', () => {
-      console.log('connection made!');
+      console.log('received connection');
+    });
+    _socket.on('state', (state: GameState) => {
+      setGameState(state);
+      console.log(state);
     });
 
     setSocket(_socket);
@@ -21,9 +44,31 @@ const PlayPage: React.FC = () => {
 
   return (
     <>
-      <div>Hello</div>
-      <div>hi</div>
-      <button onClick={connect}></button>
+      <Container>
+        <Row>
+          <h1>Prompt</h1>
+        </Row>
+        <Row>
+          <h2>Market is 100@200</h2>
+          <Col>
+            <Button variant="primary">Buy</Button>
+          </Col>
+          <Col>
+            <Button variant="secondary">Sell</Button>
+          </Col>
+        </Row>
+        <Row>
+          <Col xs={3}>
+            {gameState.players.map((player) => (
+              <Row key={player.id}>
+                {player.name}: {player.points}
+              </Row>
+            ))}
+            <Row>Player 1</Row>
+          </Col>
+          <Col>Log</Col>
+        </Row>
+      </Container>
     </>
   );
 };

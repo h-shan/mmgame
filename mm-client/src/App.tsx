@@ -8,6 +8,7 @@ import {
 
 import PlayPage from './pages/Play';
 
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 const App: React.FC = () => {
