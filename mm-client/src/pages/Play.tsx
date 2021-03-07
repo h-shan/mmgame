@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Col,
   Container,
-  InputGroup,
+  Form,
   Row,
   ButtonGroup,
   Button
@@ -13,12 +13,12 @@ import Player from '../models/Player';
 import PlayerItem from '../components/PlayerItem';
 
 class GameState {
+  prompt: string = '';
   players: Player[] = [];
 }
 
 const PlayPage: React.FC = () => {
   const [idMe, setIdMe] = useState('unset');
-  const [playerMe, setPlayerMe] = useState(new Player());
   const [socket, setSocket] = useState((null as unknown) as Socket);
   const [gameState, setGameState] = useState(new GameState());
 
@@ -39,20 +39,21 @@ const PlayPage: React.FC = () => {
     console.log('socket');
   }, []);
 
-  const connect = () => {
-    console.log('connect');
-    socket.emit('hello', { code: 123 });
-  };
-
-  const changeName = (e: any) => {
-    console.log('changeName', e);
+  const changePrompt = (e: any) => {
+    console.log('changePrompt', e.target.value);
+    socket.emit('changePrompt', { prompt: e.target.value });
   };
 
   return (
     <>
       <Container>
         <Row>
-          <h1>Prompt</h1>
+          <Form.Control
+            type="text"
+            placeholder="Prompt"
+            value={gameState.prompt}
+            onChange={changePrompt}
+          />
         </Row>
         <Row>
           <h2>Market is 100@200</h2>

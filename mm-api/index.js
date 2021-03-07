@@ -10,26 +10,36 @@ const io = require('socket.io')(server, {
   }
 });
 
+let prompt = '';
 const players = {};
+
+const updateState = () => {
+  io.emit('state', { prompt, players: Object.values(players) });
+};
 
 io.on('connection', (socket) => {
   console.log('socket connected', socket.id);
   players[socket.id] = { id: socket.id, name: socket.id, points: 0 };
   socket.emit('connection', { id: socket.id });
+  updateState();
 
-  io.emit('state', { players: Object.values(players) });
   socket.on('hello', (msg) => {
     console.log(msg);
   });
 
   socket.on('changeName', ({ id, name }) => {
     players[id].name = name;
-    io.emit('state', { players: Object.values(players) });
+    updateState();
+  });
+
+  socket.on('changePrompt', ({ prompt: _prompt }) => {
+    prompt = _prompt;
+    updateState();
   });
 
   socket.on('disconnect', () => {
     delete players[socket.id];
-    io.emit('state', { players: Object.values(players) });
+    updateState();
   });
 });
 
