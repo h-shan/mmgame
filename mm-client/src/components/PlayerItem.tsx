@@ -27,7 +27,18 @@ const PlayerItem = ({
           disabled={!self}
         />
       </Col>
-      <Col>{player.points}</Col>
+      <Col>
+        <Form.Control
+          style={{
+            color:
+              player.points > 0 ? 'green' : player.points < 0 ? 'red' : 'black'
+          }}
+          type="text"
+          value={player.points}
+          onChange={changeName}
+          disabled
+        />
+      </Col>
     </Row>
   );
 };

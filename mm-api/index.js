@@ -16,6 +16,7 @@ let prompt = '';
 let width = 0;
 let quoteBid = 0;
 let quoteAsk = 0;
+let trueValue = 0;
 const players = {};
 
 const updateState = () => {
@@ -28,13 +29,21 @@ const updateState = () => {
     quote: {
       bid: quoteBid,
       ask: quoteAsk
-    }
+    },
+    trueValue
   });
 };
 
-const checkAllReady = () => {
+const checkAllDoneBid = () => {
   return Object.values(players).every(
     (player) => player.id === mmId || player.action === 'READY'
+  );
+};
+
+const checkAllDoneBuySell = () => {
+  return Object.values(players).every(
+    (player) =>
+      player.id === mmId || player.action === 'BUY' || player.action === 'SELL'
   );
 };
 
@@ -43,17 +52,19 @@ const resetRound = () => {
   width = 0;
   phase = 'BID_WIDTH';
   mmId = '';
+  quoteBid = quoteAsk = 0;
+  trueValue = 0;
 };
 
 // action is: NONE | READY | BUY | SELL
-// phase is BID_WIDTH | MAKE_MARKET | BUY_SELL
+// phase is BID_WIDTH | MAKE_MARKET | BUY_SELL | RESOLVE
 
 io.on('connection', (socket) => {
   const id = socket.id;
   console.log('socket connected', socket.id);
   players[id] = {
     id,
-    name: id,
+    name: 'Player ' + id.substring(0, 4),
     points: 0,
     action: 'NONE'
   };
@@ -82,8 +93,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('doneBidding', () => {
-    players[id].ready = true;
-    if (checkAllReady()) {
+    players[id].action = 'READY';
+    if (checkAllDoneBid()) {
       phase = 'MAKE_MARKET';
     }
     updateState();
@@ -97,12 +108,53 @@ io.on('connection', (socket) => {
     updateState();
   });
 
+  socket.on('buySell', ({ action }) => {
+    if (action !== 'BUY' && action !== 'SELL') {
+      console.error('Invalid action', action);
+      return;
+    }
+    players[id].action = action;
+    if (checkAllDoneBuySell()) {
+      phase = 'RESOLVE';
+      updateState();
+    }
+  });
+
+  socket.on('changeTrueValue', ({ trueValue: _trueValue }) => {
+    trueValue = _trueValue;
+    updateState();
+  });
+
+  socket.on('resolve', () => {
+    Object.values(players).forEach((player) => {
+      if (player.id === mmId) {
+        return;
+      }
+      // make this mmCredit configurable
+      const mmCredit = 2;
+      let aggressorPnl;
+      if (player.action === 'BUY') {
+        aggressorPnl = trueValue - quoteAsk - mmCredit;
+      } else if (player.action === 'SELL') {
+        aggressorPnl = quoteBid - trueValue - mmCredit;
+      }
+
+      console.log(`aggressorPnl for ${player.name} = ${aggressorPnl}`);
+
+      player.points += aggressorPnl;
+      players[mmId].points -= aggressorPnl;
+    });
+
+    resetRound();
+    updateState();
+  });
+
   socket.on('disconnect', () => {
-    if (id === mmId && phase === 'MAKE_MARKET') {
+    if (id === mmId) {
       console.log('Marketmaker disconnected: Resetting...');
       resetRound();
     }
-    delete players[socket.id];
+    delete players[id];
     updateState();
   });
 });

@@ -27,16 +27,19 @@ class GameState {
   width: number = 0;
   mmId: string = '';
   quote: Quote = new Quote();
+  trueValue: number = 0;
 }
 
 const PlayPage: React.FC = () => {
   const [idMe, setIdMe] = useState('unset');
   const [playerMe, setPlayerMe] = useState(new Player());
+  const [marketMaker, setMarketMaker] = useState(new Player());
   const [socket, setSocket] = useState((null as unknown) as Socket);
   const [gameState, setGameState] = useState(new GameState());
   const [bidWidth, setBidWidth] = useState(0);
   const [quoteBid, setQuoteBid] = useState(0);
   const [quoteAsk, setQuoteAsk] = useState(0);
+  const [trueValue, setTrueValue] = useState(0);
 
   const [showBidWidthTooLargeToast, setShowBidWidthTooLargeToast] = useState(
     false
@@ -66,11 +69,22 @@ const PlayPage: React.FC = () => {
     if (player) {
       setPlayerMe(player);
     }
+    const _marketMaker = gameState.players.find(
+      (player) => player.id === gameState.mmId
+    );
+    if (_marketMaker) {
+      setMarketMaker(_marketMaker);
+    }
   }, [gameState, idMe]);
 
   const changePrompt = (e: any) => {
     console.log('changePrompt', e.target.value);
     socket.emit('changePrompt', { prompt: e.target.value });
+  };
+
+  const changeTrueValue = (e: any) => {
+    console.log('changeTrueValue', e.target.value);
+    socket.emit('changeTrueValue', { trueValue: e.target.value });
   };
 
   const submitWidth = () => {
@@ -97,11 +111,20 @@ const PlayPage: React.FC = () => {
     socket.emit('submitQuotes', { bid: quoteBid, ask: quoteAsk });
   };
 
+  const buySell = (action: string) => {
+    socket.emit('buySell', { action });
+  };
+
+  const resolve = () => {
+    socket.emit('resolve');
+  };
+
   return (
     <>
       <Container>
         <Row>
           <Form.Control
+            id="prompt"
             type="text"
             placeholder="Prompt"
             value={gameState.prompt}
@@ -143,7 +166,9 @@ const PlayPage: React.FC = () => {
             <Col xs={4}>
               <ButtonToolbar>
                 <ButtonGroup>
-                  <Button onClick={submitWidth}>Submit Width Bid</Button>
+                  <Button onClick={submitWidth} disabled={bidWidth <= 0}>
+                    Submit Width Bid
+                  </Button>
                 </ButtonGroup>
                 <ButtonGroup></ButtonGroup>
               </ButtonToolbar>
@@ -201,6 +226,9 @@ const PlayPage: React.FC = () => {
             </Row>
           </>
         )}
+        {gameState.phase === 'MAKE_MARKET' && gameState.mmId !== idMe && (
+          <h2>Waiting for Marketmaker ({marketMaker.name})...</h2>
+        )}
         {gameState.phase === 'BUY_SELL' && (
           <>
             <Row>
@@ -211,6 +239,11 @@ const PlayPage: React.FC = () => {
                   value={gameState.quote.bid}
                   disabled
                 />
+                <Button
+                  disabled={gameState.mmId === idMe}
+                  onClick={() => buySell('SELL')}>
+                  Sell at {gameState.quote.bid}
+                </Button>
               </Col>
               <Col>
                 <Form.Label>Ask</Form.Label>
@@ -219,6 +252,28 @@ const PlayPage: React.FC = () => {
                   value={gameState.quote.ask}
                   disabled
                 />
+                <Button
+                  disabled={gameState.mmId === idMe}
+                  onClick={() => buySell('BUY')}>
+                  Buy at {gameState.quote.ask}
+                </Button>
+              </Col>
+            </Row>
+          </>
+        )}
+        {gameState.phase === 'RESOLVE' && (
+          <>
+            <Row>
+              <Col>
+                <Form.Label>True Value</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={gameState.trueValue}
+                  onChange={changeTrueValue}
+                />
+              </Col>
+              <Col>
+                <Button onClick={resolve}>Resolve</Button>
               </Col>
             </Row>
           </>
@@ -226,6 +281,9 @@ const PlayPage: React.FC = () => {
         {/* <Row>
           <Col>Log</Col>
         </Row> */}
+        <Row>
+          <h2>Scoreboard</h2>
+        </Row>
         <Row>
           <Col>
             {playerMe && (
