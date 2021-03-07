@@ -1,21 +1,22 @@
-import React, { useEffect } from 'react';
-import { io } from 'socket.io-client';
+import React, { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 const PlayPage: React.FC = () => {
-  useEffect(() => {
-    const socket = io('http://localhost:3000');
+  const [socket, setSocket] = useState((null as unknown) as Socket);
 
-    socket.on('connect', () => {
-      console.log(socket.connected); // true
+  useEffect(() => {
+    const _socket = io('http://localhost:3000');
+    _socket.on('connection', () => {
+      console.log('connection made!');
     });
 
-    console.log('hi');
-    return () => {
-      socket.disconnect();
-    };
+    setSocket(_socket);
+    console.log('socket');
   }, []);
+
   const connect = () => {
-    console.log('hi 2');
+    console.log('connect');
+    socket.emit('hello', { code: 123 });
   };
 
   return (
